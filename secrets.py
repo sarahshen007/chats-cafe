@@ -1,0 +1,2 @@
+global SECRET_KEY
+SECRET_KEY = "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"
