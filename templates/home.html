@@ -1,9 +1,130 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<script>
+    var recipe_data = {{data|tojson}} 
 
-<div class="row">
-    
+    $(function() {
+        $("#spinner").hide()
+
+        load_recipe_data()
+    });
+
+    function load_recipe_data() {
+        let recipes = recipe_data["recipes"]
+
+        if (recipes.length > 0) {
+            $("#emptyRecipesMessage").hide()
+        } else {
+            $("#emptyRecipesMessage").show()
+        }        
+        
+        show_recipes(recipes)
+    }
+
+    $(function() {
+        $("#generateButton").click(function() {
+            let ingredients = $("#ingredientsInput").val()
+            let keywords = $("#keywordsInput").val()
+            generate_recipe(ingredients, keywords)
+        })
+    });
+
+    function generate_recipe(ingredients, keywords) {
+        let data = {
+            "ingredients": ingredients.split(","), 
+            "keywords": keywords.split(",")
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "/submit",                
+            dataType : "json",
+            contentType: "application/json; charset=utf-8",
+            
+            data : JSON.stringify(data),
+            beforeSend: function () { 
+                    $("#spinner").show()
+                    $("#generateButton").hide()
+            },
+            success: function(data, text) {               
+                recipe_data = data
+                window.location.href = "/"
+            },
+            error: function(request, status, error) {
+                console.log("Error");
+                console.log(request)
+                console.log(status)
+                console.log(error)
+            },
+            complete: function () {
+                $("#spinner").hide()
+                $("#generateButton").show()
+            }
+        }); 
+    }
+
+    function show_recipes(recipes) { 
+        $("#recipesList").empty()
+
+        for (let i = recipes.length - 1; i >= 0; i--) {
+            var ingredients = recipes[i]["ingredients"]
+            var keywords = recipes[i]["keywords"]
+
+            if (ingredients.join(", ").length == 0) {
+                ingredients = ["N/A"]
+            }
+
+            if (keywords.join(", ").length == 0) {
+                keywords = ["N/A"]
+            }
+
+            let food = recipes[i]["food"]
+            let recipe = recipes[i]["recipe"]
+            let image_url = recipes[i]["image"]
+            let recipe_number = i + 1
+
+            var recipe_number_html = "<h1>#"+ recipe_number +"</h1>"
+
+            var ingredients_html = "<p>My Ingredients: " + ingredients.join(", ") + "</p>"
+            var keywords_html = "<p>My Keywords: " + keywords.join(", ") + "</p>"
+            var recipe_html =  "<div><h3>" + food +"</h3><br><img src='" + image_url + "'><br><span class='recipe-text'>" + recipe + "</span></div>"
+
+            var recipe_card = $("<div class='recipe-card'></div>")
+
+            recipe_card.append(recipe_number_html, ingredients_html, keywords_html, recipe_html)
+            $("#recipesList").append(recipe_card)
+
+            console.log($("#recipesList"))
+        }
+    }
+</script>
+
+<div class="row section-container" id="questionsContainer">
+    <div class="col">
+        <div class="input-div" id="ingredientsInputContainer">
+            <h2 id="ingredientInstruction">What ingredients would you like?</h2>
+            <textarea id="ingredientsInput" class="input-text" placeholder = "eggs, flour, salt, sugar, vanilla extract" rows="1" cols="40"></textarea>
+        </div>
+
+        <div class="input-div" id="keywordsInputContainer">
+            <h2 id="keywordsInstruction">What kind of recipe do you want to make?</h2>
+            <textarea id="keywordsInput" class="input-text" placeholder = "hard, fun" rows="1" cols="40"></textarea>
+        </div>
+
+        <button id="generateButton">Generate</button>
+        <div class="spinner-border align-items-center" id="spinner" role="status"></div>
+    </div>  
+</div>
+
+<div class="row section-container" id="recipeContainer">
+    <div class="col">
+        <h2 id="recipesTitle">My Recipe Book</h2>
+
+        <p id="emptyRecipesMessage">Nothing to see here...</p>
+
+        <div id="recipesList"></div>
+    </div>
 </div>
 
 
